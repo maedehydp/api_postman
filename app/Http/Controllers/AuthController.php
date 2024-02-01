@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\MediaLibrary\Support\MediaLibraryPro;
 
 class AuthController extends Controller
 {
@@ -20,7 +22,7 @@ class AuthController extends Controller
                     'firstname' => 'required',
                     'email' => 'required|email|unique:users,email',
                     'password' => 'required',
-//                    'role' => 'required',
+                    'role' => 'required',
                 ]
             );
             if ($validateUser->fails()) {
@@ -47,7 +49,26 @@ class AuthController extends Controller
                     'password' => password_hash($request->password, PASSWORD_DEFAULT),
                 ]);
             }
-            $user->syncRoles('admin');
+
+            switch ($request->role) {
+                case 'admin':
+                {
+                    $user->syncRoles('admin');
+                    break;
+                }
+                case 'seller':
+                {
+                    $user->syncRoles('seller');
+                    break;
+                }
+                case 'customer':
+                {
+                    $user->syncRoles('customer');
+                    break;
+                }
+            }
+
+//            $user->syncRoles('admin');
             return response()->json([
                 'status' => true,
                 'message' => 'User Created Successfully',
@@ -67,14 +88,14 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
         if (!$user) {
-            throw ValidationException::withMessages([
-                'email' => ['the provided credentials are incorrect.']
+            return response()->json([
+                'email' => 'the provided credentials are incorrect.'
             ]);
         }
 //        Hash::check($request->password,$user->password);
         if (Hash::make($request->password) == $user->password) {
-            throw validationException::withMessages([
-                'email' => ['the provided credentials are incorrect.']
+            return response()->json([
+                'email' => 'the provided credentials are incorrect.'
             ]);
         }
 
@@ -90,15 +111,16 @@ class AuthController extends Controller
         $user = User::find($id);
         $user->tokens->each(function ($token) {
             $token->delete();
-            Auth::logout();
         });
         return response()->json([
             'message' => 'logged out successfully'
         ]);
     }
 
+
     public function index()
     {
+//        dd(\auth()->user());
         try {
             return User::all();
         } catch (\Throwable $th) {
@@ -132,6 +154,7 @@ class AuthController extends Controller
 
     public function update(Request $request, $id)
     {
+//        dd(5132);
         try {
             $user = User::find((int)$id)->update($request->all());
             return response()->json([
@@ -145,23 +168,36 @@ class AuthController extends Controller
                 'message' => $th->getMessage(),
             ], 500);
         }
+
     }
 
-    public function show(user $user)
+//    public function show(user $user)
+//    {
+//        try {
+//
+//            return response()->json([
+//                'user' => $user,
+//                'status' => true,
+//                'message' => 'showed successfully'
+//            ]);
+//
+//        } catch (\Throwable $th) {
+//            return response()->json([
+//                'status' => false,
+//                'message' => $th->getMessage(),
+//            ], 500);
+//        }
+//    }
+
+//    public function test()
+//    {
+//        $user = Auth::user();
+//        dd($user);
+//    }
+
+    public function addimage(Request $request)
     {
-        try {
-
-            return response()->json([
-                'user' => $user,
-                'status' => true,
-                'message' => 'showed successfully'
-            ]);
-
-        } catch (\Throwable $th) {
-            return response()->json([
-                'status' => false,
-                'message' => $th->getMessage(),
-            ], 500);
-        }
+        $image = $request->image;
+        Media::add($image);
     }
 }

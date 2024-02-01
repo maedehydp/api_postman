@@ -6,6 +6,7 @@ use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -31,7 +32,6 @@ class ProductController extends Controller
                 'message' => "{$e->getMessage()}",
             ]);
         }
-
     }
 
     public function index()
@@ -47,6 +47,7 @@ class ProductController extends Controller
         try {
             $products = Product::find($id);
             $products->delete();
+
             return \response()->json([
                 'status' => true,
                 'message' => 'product is deleted'
@@ -62,14 +63,16 @@ class ProductController extends Controller
 
     public function update(Request $request, $id)
     {
+//        dd(\auth()->user()->getPermissionNames());
         try {
             $products = Product::find($id)->updateOrFail([
-                'title' => $request->product_name,
+                'title' => $request->title,
                 'price' => $request->price,
-                'inventory' => $request->amount_available,
-                'description' => $request->explanation,
+                'inventory' => $request->inventory,
+                'description' => $request->description,
             ]);
             return response()->json([
+                'status' => 'updated successfully',
                 'products' => $products
             ]);
         } catch (\Exception $e) {
